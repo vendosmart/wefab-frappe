@@ -750,16 +750,16 @@ class User(Document):
 		if self.user_type != "System User" or self.roles or not self.is_new():
 			return
 
-		frappe.msgprint(
-			_("Newly created user {0} has no roles enabled.").format(frappe.bold(self.name)),
-			title=_("No Roles Specified"),
-			indicator="orange",
-			primary_action={
-				"label": _("Add Roles"),
-				"client_action": "frappe.set_route",
-				"args": ["Form", self.doctype, self.name],
-			},
-		)
+		# frappe.msgprint(
+		# 	_("Newly created user {0} has no roles enabled.").format(frappe.bold(self.name)),
+		# 	title=_("No Roles Specified"),
+		# 	indicator="orange",
+		# 	primary_action={
+		# 		"label": _("Add Roles"),
+		# 		"client_action": "frappe.set_route",
+		# 		"args": ["Form", self.doctype, self.name],
+		# 	},
+		# )
 
 
 @frappe.whitelist()

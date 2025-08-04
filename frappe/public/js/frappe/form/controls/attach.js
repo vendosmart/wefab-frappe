@@ -2,7 +2,7 @@ frappe.ui.form.ControlAttach = class ControlAttach extends frappe.ui.form.Contro
 	make_input() {
 		let me = this;
 		this.$input = $('<button class="btn btn-default btn-sm btn-attach">')
-			.html(__("Attach"))
+			.html(__("Import CSV"))
 			.prependTo(me.input_area)
 			.on({
 				click: function () {
