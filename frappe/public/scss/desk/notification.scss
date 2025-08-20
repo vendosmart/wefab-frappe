@@ -7,6 +7,11 @@
 	perspective: 3200px;
 }
 
+// Hide the notification bell icon
+.dropdown-notifications {
+	display: none !important;
+}
+
 .dropdown-notifications .header {
 	margin: 7px 15px 10px 15px;
 	cursor: pointer;

@@ -8,7 +8,9 @@ frappe.ui.Notifications = class Notifications {
 	}
 
 	make() {
-		this.dropdown = $(".navbar").find(".dropdown-notifications").removeClass("hidden");
+		// Keep notification bell hidden - comment out the line below
+		// this.dropdown = $(".navbar").find(".dropdown-notifications").removeClass("hidden");
+		this.dropdown = $(".navbar").find(".dropdown-notifications");
 		this.dropdown_list = this.dropdown.find(".notifications-list");
 		this.header_items = this.dropdown_list.find(".header-items");
 		this.header_actions = this.dropdown_list.find(".header-actions");
