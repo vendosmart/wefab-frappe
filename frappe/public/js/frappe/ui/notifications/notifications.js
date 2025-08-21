@@ -10,6 +10,7 @@ frappe.ui.Notifications = class Notifications {
 	make() {
 		// Keep notification bell hidden - comment out the line below
 		// this.dropdown = $(".navbar").find(".dropdown-notifications").removeClass("hidden");
+		// in wefab we have created the new notification bell icon so we hiding it
 		this.dropdown = $(".navbar").find(".dropdown-notifications");
 		this.dropdown_list = this.dropdown.find(".notifications-list");
 		this.header_items = this.dropdown_list.find(".header-items");
