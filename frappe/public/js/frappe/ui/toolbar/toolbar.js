@@ -169,11 +169,15 @@ frappe.ui.toolbar.Toolbar = class {
 			}
 		}
 	}
-
+// in wefab we have created the new notification bell icon so we hiding it
 	setup_notifications() {
-		if (frappe.boot.desk_settings.notifications && frappe.session.user !== "Guest") {
-			this.notifications = new frappe.ui.Notifications();
-		}
+		// Hide notification bell icon completely
+		$(".dropdown-notifications").hide();
+		
+		// Comment out or remove the original notification setup
+		// if (frappe.boot.desk_settings.notifications && frappe.session.user !== "Guest") {
+		// 	this.notifications = new frappe.ui.Notifications();
+		// }
 	}
 };
 
@@ -224,8 +228,9 @@ $.extend(frappe.ui.toolbar, {
 		$(document.body).trigger("toggleFullWidth");
 	},
 	set_fullwidth_if_enabled() {
-		let fullwidth = JSON.parse(localStorage.container_fullwidth || "false");
+		let fullwidth = JSON.parse(localStorage.container_fullwidth || "true");
 		$(document.body).toggleClass("full-width", fullwidth);
+		$(document.body).addClass("full-width");
 	},
 	show_shortcuts(e) {
 		e.preventDefault();
