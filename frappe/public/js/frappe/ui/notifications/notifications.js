@@ -6,11 +6,11 @@ frappe.ui.Notifications = class Notifications {
 		this.notification_settings = frappe.boot.notification_settings;
 		this.make();
 	}
-
+// in wefab we have created the new notification bell icon so we hiding it
 	make() {
 		// Keep notification bell hidden - comment out the line below
 		// this.dropdown = $(".navbar").find(".dropdown-notifications").removeClass("hidden");
-		// in wefab we have created the new notification bell icon so we hiding it
+		
 		this.dropdown = $(".navbar").find(".dropdown-notifications");
 		this.dropdown_list = this.dropdown.find(".notifications-list");
 		this.header_items = this.dropdown_list.find(".header-items");

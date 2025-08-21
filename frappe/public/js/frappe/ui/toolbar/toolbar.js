@@ -169,10 +169,9 @@ frappe.ui.toolbar.Toolbar = class {
 			}
 		}
 	}
-
+// in wefab we have created the new notification bell icon so we hiding it
 	setup_notifications() {
 		// Hide notification bell icon completely
-		// in wefab we have created the new notification bell icon so we hiding it
 		$(".dropdown-notifications").hide();
 		
 		// Comment out or remove the original notification setup
