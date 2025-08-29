@@ -219,6 +219,34 @@ class EmailQueue(Document):
 			self.status = "Not Sent"
 			self.save(ignore_permissions=True)
 
+	@frappe.whitelist()
+	def resend_email(self):
+		"""Resend email to the same recipients"""
+		if not self.recipients:
+			frappe.throw(_("No recipients found to resend email"))
+		
+		# Create a new email queue with the same content
+		new_queue = frappe.new_doc("Email Queue")
+		
+		# Copy all the fields except name and recipients
+		for field in self.meta.fields:
+			if field.fieldname not in ["name", "recipients"]:
+				new_queue.set(field.fieldname, self.get(field.fieldname))
+		
+		# Set recipients with "Not Sent" status
+		for recipient in self.recipients:
+			new_queue.append("recipients", {
+				"recipient": recipient.recipient,
+				"status": "Not Sent"
+			})
+		
+		new_queue.insert(ignore_permissions=True)
+		
+		# Send the email immediately
+		new_queue.send(force_send=True)
+		
+		frappe.msgprint(_("Email resent successfully to {0} recipients").format(len(self.recipients)))
+
 
 @task(queue="short")
 @deprecated
