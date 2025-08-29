@@ -37,6 +37,19 @@ frappe.ui.form.on("Email Queue", {
 					},
 				});
 			});
+		} else if (frm.doc.status == "Sent") {
+			frm.add_custom_button("Resend Email", function () {
+				frm.call({
+					method: "resend_email",
+					doc: frm.doc,
+					args: {
+						name: frm.doc.name,
+					},
+					callback: function () {
+						frm.reload_doc();
+					},
+				});
+			});
 		}
 	},
 });
