@@ -64,12 +64,14 @@ frappe.ui.form.PrintView = class {
 	setup_toolbar() {
 		this.page.set_primary_action(__("Print"), () => this.printit(), "printer");
 // removed this for the useer dont get confused with the full page and pdf view
-		// this.page.add_button(__("Full Page"), () => this.render_page("/printview?"), {
-		// 	icon: "full-page",
-		// });
+		if (frappe.user.has_role("System Manager")) {
+			this.page.add_button(__("Full Page"), () => this.render_page("/printview?"), {
+				icon: "full-page",
+			});
+ 		
 
-		//this.page.add_button(__("PDF"), () => this.render_pdf(), { icon: "small-file" });
-
+		this.page.add_button(__("PDF"), () => this.render_pdf(), { icon: "small-file" });
+		}
 		this.page.add_button(__("Refresh"), () => this.refresh_print_format(), {
 			icon: "refresh",
 		});
@@ -82,11 +84,13 @@ frappe.ui.form.PrintView = class {
 		// 	"",
 		// 	__("Form")
 		// );
-		this.page.add_button(__("Go to Document"), () => {
-			this.go_to_form_view();
-		}, {
-			icon: "es-line-filetype"
-		});
+		
+			this.page.add_button(__("Go to Document"), () => {
+				this.go_to_form_view();
+			}, {
+				icon: "es-line-filetype"
+			});
+		
 	}
 
 	setup_sidebar() {
@@ -164,9 +168,9 @@ frappe.ui.form.PrintView = class {
 	//removed this for the user dont get confused with the drop down menu
 	// 	this.page.clear_menu();
 
-	// 	// this.page.add_menu_item(__("Print Settings"), () => {
-	// 	// 	frappe.set_route("Form", "Print Settings");
-	// 	// });
+	// 	this.page.add_menu_item(__("Print Settings"), () => {
+	// 		frappe.set_route("Form", "Print Settings");
+	// 	});
 
 	// 	if (this.print_settings.enable_raw_printing == "1") {
 	// 		this.page.add_menu_item(__("Raw Printing Setting"), () => {
@@ -174,9 +178,9 @@ frappe.ui.form.PrintView = class {
 	// 		});
 	// 	}
 
-	// 	// if (frappe.model.can_create("Print Format")) {
-	// 	// 	this.page.add_menu_item(__("Customize"), () => this.edit_print_format());
-	// 	// }
+	// 	if (frappe.model.can_create("Print Format")) {
+	// 		this.page.add_menu_item(__("Customize"), () => this.edit_print_format());
+	// 	}
 
 	// 	if (cint(this.print_settings.enable_print_server)) {
 	// 		this.page.add_menu_item(__("Select Network Printer"), () =>
@@ -185,36 +189,39 @@ frappe.ui.form.PrintView = class {
 	// 	}
 	// }
 
-	show(frm) {
-		this.frm = frm;
-		this.set_title();
-		this.set_breadcrumbs();
-		this.setup_customize_dialog();
-//removed print designer link so that we dont confuse the user with the new print designer
-		// print designer link
-		// if (Object.keys(frappe.boot.versions).includes("print_designer")) {
-		// 	this.page.add_inner_message(`
-		// 	<a style="line-height: 2.4" href="/app/print-designer?doctype=${this.frm.doctype}">
-		// 		${__("Try the new Print Designer")}
-		// 	</a>
-		// 	`);
-		// } else {
-		// 	this.page.add_inner_message(`
-		// 	<a style="line-height: 2.4" href="https://frappecloud.com/marketplace/apps/print_designer?utm_source=framework-desk&utm_medium=print-view&utm_campaign=try-link">
-		// 		${__("Try the new Print Designer")}
-		// 	</a>
-		// 	`);
-		// }
-		let tasks = [
-			this.set_default_print_format,
-			this.set_default_print_language,
-			this.set_default_letterhead,
-			this.preview,
-		].map((fn) => fn.bind(this));
+show(frm) {
+	this.frm = frm;
+	this.set_title();
+	this.set_breadcrumbs();
+	this.setup_customize_dialog();
 
-		this.setup_additional_settings();
-		return frappe.run_serially(tasks);
+	// print designer link - only visible to System Manager
+	if (frappe.user.has_role("System Manager")) {
+		if (Object.keys(frappe.boot.versions).includes("print_designer")) {
+			this.page.add_inner_message(`
+			<a style="line-height: 2.4" href="/app/print-designer?doctype=${this.frm.doctype}">
+				${__("Try the new Print Designer")}
+			</a>
+			`);
+		} else {
+			this.page.add_inner_message(`
+			<a style="line-height: 2.4" href="https://frappecloud.com/marketplace/apps/print_designer?utm_source=framework-desk&utm_medium=print-view&utm_campaign=try-link">
+				${__("Try the new Print Designer")}
+			</a>
+			`);
+		}
 	}
+
+	let tasks = [
+		this.set_default_print_format,
+		this.set_default_print_language,
+		this.set_default_letterhead,
+		this.preview,
+	].map((fn) => fn.bind(this));
+
+	this.setup_additional_settings();
+	return frappe.run_serially(tasks);
+}
 
 	set_breadcrumbs() {
 		frappe.breadcrumbs.add(this.frm.meta.module, this.frm.doctype);
