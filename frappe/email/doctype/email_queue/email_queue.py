@@ -67,7 +67,7 @@ class EmailQueue(Document):
 		send_after: DF.Datetime | None
 		sender: DF.Data | None
 		show_as_cc: DF.SmallText | None
-		status: DF.Literal["Not Sent", "Sending", "Sent", "Partially Sent", "Error"]
+		status: DF.Literal["Not Sent", "Sending", "Sent", "Partially Sent", "Error", "Seen"]
 		unsubscribe_method: DF.Data | None
 		unsubscribe_param: DF.Data | None
 	# end: auto-generated types
@@ -218,34 +218,6 @@ class EmailQueue(Document):
 		if self.status == "Error":
 			self.status = "Not Sent"
 			self.save(ignore_permissions=True)
-
-	@frappe.whitelist()
-	def resend_email(self):
-		"""Resend email to the same recipients"""
-		if not self.recipients:
-			frappe.throw(_("No recipients found to resend email"))
-		
-		# Create a new email queue with the same content
-		new_queue = frappe.new_doc("Email Queue")
-		
-		# Copy all the fields except name and recipients
-		for field in self.meta.fields:
-			if field.fieldname not in ["name", "recipients"]:
-				new_queue.set(field.fieldname, self.get(field.fieldname))
-		
-		# Set recipients with "Not Sent" status
-		for recipient in self.recipients:
-			new_queue.append("recipients", {
-				"recipient": recipient.recipient,
-				"status": "Not Sent"
-			})
-		
-		new_queue.insert(ignore_permissions=True)
-		
-		# Send the email immediately
-		new_queue.send(force_send=True)
-		
-		frappe.msgprint(_("Email resent successfully to {0} recipients").format(len(self.recipients)))
 
 
 @task(queue="short")
@@ -533,6 +505,7 @@ class QueueBuilder:
 		with_container=False,
 		email_read_tracker_url=None,
 		x_priority: Literal[1, 3, 5] = 3,
+		email_headers=None,
 	):
 		"""Add email to sending queue (Email Queue)
 
@@ -559,6 +532,7 @@ class QueueBuilder:
 		:param with_container: Wraps email inside styled container
 		:param email_read_tracker_url: A URL for tracking whether an email is read by the recipient.
 		:param x_priority: 1 = HIGHEST, 3 = NORMAL, 5 = LOWEST
+		:param email_headers: Additional headers to be added in the email, e.g. {"X-Custom-Header": "value"} or {"Custom-Header": "value"}. Automatically prepends "X-" to the header name if not present.
 		"""
 
 		self._unsubscribe_method = unsubscribe_method
@@ -595,6 +569,7 @@ class QueueBuilder:
 		self.inline_images = inline_images
 		self.print_letterhead = print_letterhead
 		self.email_read_tracker_url = email_read_tracker_url
+		self.email_headers = email_headers
 
 	@property
 	def unsubscribe_method(self):
@@ -747,6 +722,10 @@ class QueueBuilder:
 		)
 
 		mail.set_message_id(self.message_id, self.is_notification)
+
+		if self.email_headers:
+			mail.add_headers(self.email_headers)
+
 		if self.read_receipt:
 			mail.msg_root["Disposition-Notification-To"] = self.sender
 		if self.in_reply_to:
