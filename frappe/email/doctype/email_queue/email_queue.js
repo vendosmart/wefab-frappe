@@ -1,6 +1,57 @@
+frappe.ui.form.on("Email Queue", {
+	refresh: function (frm) {
+		if (["Not Sent", "Partially Sent"].includes(frm.doc.status)) {
+			let button = frm.add_custom_button("Send Now", function () {
+				frappe.call({
+					method: "frappe.email.doctype.email_queue.email_queue.send_now",
+					args: {
+						name: frm.doc.name,
+						force_send: true,
+					},
+					btn: button,
+					callback: function () {
+						frm.reload_doc();
+						if (cint(frappe.sys_defaults.suspend_email_queue)) {
+							frappe.show_alert(
+								__(
+									"Email queue is currently suspended. Resume to automatically send other emails."
+								)
+							);
+						}
+					},
+				});
+			});
+		} else if (frm.doc.status == "Error") {
+			frm.add_custom_button("Retry Sending", function () {
+				frm.call({
+					method: "retry_sending",
+					doc: frm.doc,
+					args: {
+						name: frm.doc.name,
+					},
+					callback: function () {
+						frm.reload_doc();
+					},
+				});
+			});
+		} else if (frm.doc.status == "Sent") {
+			frm.add_custom_button("Resend Email", function () {
+				frm.call({
+					method: "resend_email",
+					doc: frm.doc,
+					args: {
+						name: frm.doc.name,
+					},
+					callback: function () {
+						frm.reload_doc();
+					},
+				});
+			});
+		}
+	},
+});
 frappe.ui.form.on('Email Queue', {
 	refresh: function(frm) {
-		// Add preview section after the message field
 		render_email_preview(frm);
 	},
 	
@@ -14,10 +65,8 @@ function render_email_preview(frm) {
 		return;
 	}
 	
-	// Remove existing preview
 	frm.$wrapper.find('.email-preview-section').remove();
 	
-	// Create preview section after message field
 	let $message_wrapper = frm.fields_dict.message.$wrapper;
 	
 	let $preview_section = $(`
