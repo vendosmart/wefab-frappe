@@ -5,11 +5,13 @@ from __future__ import annotations
 
 import json
 import quopri
+import re
 import traceback
 from contextlib import suppress
 from email.parser import Parser
-from email.policy import SMTP
+from email.policy import SMTP, default
 from typing import TYPE_CHECKING
+import html as html_module
 
 import frappe
 from frappe import _, safe_encode, task
@@ -247,6 +249,416 @@ class EmailQueue(Document):
 		
 		frappe.msgprint(_("Email resent successfully to {0} recipients").format(len(self.recipients)))
 
+	# ========================================
+	# EMAIL PREVIEW METHODS
+	# ========================================
+
+	def before_load(self):
+		"""Generate email preview before loading the document"""
+		self.generate_email_preview()
+
+	def after_insert(self):
+		"""Generate and save preview after document is inserted"""
+		if self.message:
+			self.generate_email_preview()
+			if self.html_preview:
+				frappe.db.set_value(
+					"Email Queue",
+					self.name,
+					"html_preview",
+					self.html_preview,
+					update_modified=False
+				)
+	
+	def on_update(self):
+		"""Generate and save preview when document is updated"""
+		if self.message and not self.html_preview:
+			self.generate_email_preview()
+			if self.html_preview:
+				frappe.db.set_value(
+					"Email Queue",
+					self.name,
+					"html_preview",
+					self.html_preview,
+					update_modified=False
+				)
+
+	def generate_email_preview(self):
+		"""Generate HTML preview of the email - Server Side Only"""
+		if not self.message:
+			self.html_preview = self._get_empty_preview()
+			return
+		
+		# Build the preview HTML
+		preview_html = self._build_preview_html()
+		
+		# Set the preview in the html_preview field
+		self.html_preview = preview_html
+
+	def _build_preview_html(self):
+		"""Build the complete email preview HTML"""
+		
+		# Extract HTML content from MIME message
+		email_html = self._extract_html_from_message()
+		
+		# Get recipient list HTML
+		recipients_html = self._get_recipients_html()
+		
+		# Get CC list if available
+		cc_html = ""
+		if self.show_as_cc:
+			cc_html = f"""
+				<div class="email-header-row">
+					<span class="email-label">CC:</span>
+					<span class="email-value">{frappe.utils.escape_html(self.show_as_cc)}</span>
+				</div>
+			"""
+		
+		# Get attachments info
+		attachments_html = self._get_attachments_html()
+		
+		# Get email subject
+		subject = self._get_email_subject()
+		
+		# Build the complete preview
+		preview = f"""
+		<div class="email-preview-container">
+			<style>
+				.email-preview-container {{
+					font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+					max-width: 100%;
+					margin: 0;
+					background: #f8f9fa;
+					border: 1px solid #dee2e6;
+					border-radius: 8px;
+					overflow: hidden;
+				}}
+				.email-preview-header {{
+					background: #ffffff;
+					padding: 20px;
+					border-bottom: 1px solid #dee2e6;
+				}}
+				.email-header-row {{
+					margin-bottom: 12px;
+					display: flex;
+					align-items: flex-start;
+					font-size: 14px;
+				}}
+				.email-label {{
+					font-weight: 600;
+					color: #495057;
+					min-width: 80px;
+					flex-shrink: 0;
+				}}
+				.email-value {{
+					color: #212529;
+					flex: 1;
+					word-break: break-word;
+				}}
+				.recipient-tag {{
+					display: inline-block;
+					background: #e9ecef;
+					padding: 4px 10px;
+					border-radius: 12px;
+					margin-right: 6px;
+					margin-bottom: 6px;
+					font-size: 13px;
+				}}
+				.recipient-sent {{
+					background: #d1e7dd;
+					color: #0f5132;
+				}}
+				.recipient-error {{
+					background: #f8d7da;
+					color: #842029;
+				}}
+				.email-preview-body {{
+					background: #ffffff;
+					padding: 20px;
+					min-height: 200px;
+					overflow-x: auto;
+					border-top: 1px solid #dee2e6;
+				}}
+				.email-attachments {{
+					background: #f8f9fa;
+					padding: 15px 20px;
+					border-top: 1px solid #dee2e6;
+				}}
+				.attachment-item {{
+					display: inline-block;
+					background: #ffffff;
+					border: 1px solid #dee2e6;
+					border-radius: 6px;
+					padding: 8px 12px;
+					margin-right: 10px;
+					margin-bottom: 8px;
+					font-size: 13px;
+				}}
+				.attachment-icon {{
+					margin-right: 6px;
+					color: #6c757d;
+				}}
+				.status-badge {{
+					display: inline-block;
+					padding: 4px 10px;
+					border-radius: 4px;
+					font-size: 12px;
+					font-weight: 600;
+					margin-left: 10px;
+				}}
+				.status-sent {{
+					background: #d1e7dd;
+					color: #0f5132;
+				}}
+				.status-not-sent {{
+					background: #fff3cd;
+					color: #664d03;
+				}}
+				.status-error {{
+					background: #f8d7da;
+					color: #842029;
+				}}
+				.status-sending {{
+					background: #cfe2ff;
+					color: #084298;
+				}}
+				.preview-toolbar {{
+					background: #495057;
+					color: #ffffff;
+					padding: 10px 20px;
+					font-size: 12px;
+					font-weight: 600;
+					text-transform: uppercase;
+					letter-spacing: 0.5px;
+				}}
+				.email-metadata {{
+					background: #f8f9fa;
+					padding: 10px 20px;
+					border-top: 1px solid #dee2e6;
+					font-size: 12px;
+					color: #6c757d;
+				}}
+				.metadata-item {{
+					display: inline-block;
+					margin-right: 20px;
+				}}
+			</style>
+			
+			<div class="preview-toolbar">
+				📧 Email Preview
+			</div>
+			
+			<div class="email-preview-header">
+				<div class="email-header-row">
+					<span class="email-label">From:</span>
+					<span class="email-value">{frappe.utils.escape_html(self.sender or 'N/A')}</span>
+				</div>
+				
+				<div class="email-header-row">
+					<span class="email-label">To:</span>
+					<span class="email-value">{recipients_html}</span>
+				</div>
+				
+				{cc_html}
+				
+				<div class="email-header-row">
+					<span class="email-label">Subject:</span>
+					<span class="email-value"><strong>{frappe.utils.escape_html(subject)}</strong></span>
+				</div>
+			</div>
+			
+			<div class="email-preview-body">
+				{email_html}
+			</div>
+			
+			{attachments_html}
+			
+		</div>
+		"""
+		
+		return preview
+
+	def _get_empty_preview(self):
+		"""Return empty preview HTML"""
+		return """
+		<div style="padding: 40px; text-align: center; color: #6c757d; background: #f8f9fa; border: 1px dashed #dee2e6; border-radius: 8px;">
+			<div style="font-size: 48px; margin-bottom: 16px;">📭</div>
+			<div style="font-size: 16px; font-weight: 600;">No Email Content</div>
+			<div style="font-size: 14px; margin-top: 8px;">The message field is empty</div>
+		</div>
+		"""
+	
+	def _extract_html_from_message(self):
+		"""Extract HTML content from MIME message"""
+		if not self.message:
+			return "<p>No message content</p>"
+		
+		try:
+			# Parse the MIME message
+			msg = Parser(policy=default).parsestr(self.message)
+			
+			# Try to get HTML part
+			html_content = None
+			
+			if msg.is_multipart():
+				for part in msg.walk():
+					content_type = part.get_content_type()
+					if content_type == 'text/html':
+						try:
+							html_content = part.get_content()
+							if html_content:
+								break
+						except Exception as e:
+							# If get_content() fails, try get_payload with decode
+							try:
+								payload = part.get_payload(decode=True)
+								if payload:
+									html_content = payload.decode('utf-8', errors='replace')
+									break
+							except:
+								continue
+			else:
+				if msg.get_content_type() == 'text/html':
+					try:
+						html_content = msg.get_content()
+					except:
+						payload = msg.get_payload(decode=True)
+						if payload:
+							html_content = payload.decode('utf-8', errors='replace')
+			
+			if html_content:
+				return html_content
+			
+			# Fallback: try to get text/plain and convert to HTML
+			if msg.is_multipart():
+				for part in msg.walk():
+					content_type = part.get_content_type()
+					if content_type == 'text/plain':
+						try:
+							text_content = part.get_content()
+							return f"<pre style='white-space: pre-wrap; font-family: inherit;'>{html_module.escape(text_content)}</pre>"
+						except:
+							continue
+			else:
+				if msg.get_content_type() == 'text/plain':
+					try:
+						text_content = msg.get_content()
+						return f"<pre style='white-space: pre-wrap; font-family: inherit;'>{html_module.escape(text_content)}</pre>"
+					except:
+						pass
+			
+			return "<p style='color: #999;'>No HTML or text content found in email</p>"
+			
+		except Exception as e:
+			frappe.log_error(f"Error extracting HTML from message: {str(e)}")
+			# Fallback: show the raw message with some formatting
+			return f"<pre style='white-space: pre-wrap; font-family: monospace; font-size: 12px;'>{frappe.utils.escape_html(self.message[:2000])}</pre>"
+
+	def _get_recipients_html(self):
+		"""Generate HTML for recipients with status indicators"""
+		if not self.recipients:
+			return '<em style="color: #6c757d;">No recipients</em>'
+		
+		recipients_tags = []
+		for recipient in self.recipients:
+			status_class = ""
+			if recipient.status == "Sent":
+				status_class = "recipient-sent"
+			elif recipient.error:
+				status_class = "recipient-error"
+			
+			recipients_tags.append(
+				f'<span class="recipient-tag {status_class}">'
+				f'{frappe.utils.escape_html(recipient.recipient or "")}'
+				f'</span>'
+			)
+		
+		return "".join(recipients_tags)
+
+	def _get_attachments_html(self):
+		"""Generate HTML for attachments section"""
+		if not self.attachments:
+			return ""
+		
+		try:
+			attachments_list = json.loads(self.attachments) if isinstance(self.attachments, str) else self.attachments
+			if not attachments_list:
+				return ""
+		except (json.JSONDecodeError, TypeError):
+			return ""
+		
+		attachment_items = []
+		for attachment in attachments_list:
+			file_name = attachment.get('fname', 'Unknown file')
+			file_size = attachment.get('fsize', '')
+			
+			size_display = ""
+			if file_size:
+				try:
+					size_kb = int(file_size) / 1024
+					if size_kb > 1024:
+						size_display = f" ({size_kb/1024:.1f} MB)"
+					else:
+						size_display = f" ({size_kb:.1f} KB)"
+				except:
+					pass
+			
+			attachment_items.append(
+				f'<div class="attachment-item">'
+				f'<span class="attachment-icon">📎</span>'
+				f'{frappe.utils.escape_html(file_name)}{size_display}'
+				f'</div>'
+			)
+		
+		if not attachment_items:
+			return ""
+		
+		return f"""
+		<div class="email-attachments">
+			<div style="margin-bottom: 8px; font-weight: 600; color: #495057; font-size: 13px;">
+				📎 Attachments ({len(attachment_items)})
+			</div>
+			{"".join(attachment_items)}
+		</div>
+		"""
+
+	def _get_email_subject(self):
+		"""Extract subject from message or get from communication"""
+		# Try to get subject from linked communication
+		if self.communication:
+			try:
+				comm = frappe.get_doc("Communication", self.communication)
+				if comm.subject:
+					return comm.subject
+			except:
+				pass
+		
+		# Try to parse subject from MIME message
+		if self.message:
+			try:
+				msg = Parser(policy=default).parsestr(self.message)
+				if msg['Subject']:
+					return msg['Subject']
+			except:
+				pass
+			
+			# Look for <title> tag
+			match = re.search(r'<title>(.*?)</title>', self.message, re.IGNORECASE | re.DOTALL)
+			if match:
+				return match.group(1).strip()
+			
+			# Look for first <h1> tag
+			match = re.search(r'<h1[^>]*>(.*?)</h1>', self.message, re.IGNORECASE | re.DOTALL)
+			if match:
+				# Remove HTML tags from h1 content
+				h1_text = re.sub(r'<[^>]+>', '', match.group(1))
+				return h1_text.strip()
+		
+		# Default subject based on reference
+		if self.reference_doctype and self.reference_name:
+			return f"{self.reference_doctype}: {self.reference_name}"
+		
+		return "Email from Frappe"
 
 @task(queue="short")
 @deprecated
@@ -339,9 +751,7 @@ class SendMailContext:
 			return ""
 
 		message = message.replace(self.message_placeholder("tracker"), self.get_tracker_str(recipient_email))
-		message = message.replace(
-			self.message_placeholder("unsubscribe_url"), self.get_unsubscribe_str(recipient_email)
-		)
+		message = message.replace(self.message_placeholder("unsubscribe_url"), self.get_unsubscribe_str(recipient_email))
 		message = message.replace(self.message_placeholder("cc"), self.get_receivers_str())
 		message = message.replace(
 			self.message_placeholder("recipient"), self.get_recipient_str(recipient_email)
@@ -485,6 +895,102 @@ def send_now(name, force_send: bool = False):
 def toggle_sending(enable):
 	frappe.only_for("System Manager")
 	frappe.db.set_default("suspend_email_queue", 0 if sbool(enable) else 1)
+
+
+@frappe.whitelist()
+def get_email_preview(name):
+	"""
+	Whitelisted method to regenerate and get email preview
+	
+	Args:
+		name: Email Queue document name
+	
+	Returns:
+		dict: Preview HTML and metadata
+	"""
+	try:
+		doc = frappe.get_doc("Email Queue", name)
+		doc.generate_email_preview()
+		doc.save(ignore_permissions=True)
+		
+		return {
+			"success": True,
+			"preview_html": doc.html_preview,
+			"status": doc.status,
+			"sender": doc.sender,
+			"recipient_count": len(doc.recipients) if doc.recipients else 0
+		}
+	except Exception as e:
+		frappe.log_error(f"Error generating email preview: {str(e)}")
+		return {
+			"success": False,
+			"error": str(e)
+		}
+
+
+@frappe.whitelist()
+def get_rendered_preview(name):
+	"""Get the rendered HTML preview for Email Queue"""
+	try:
+		doc = frappe.get_doc("Email Queue", name)
+		
+		# Generate preview if not exists
+		if not doc.html_preview:
+			doc.generate_email_preview()
+			if doc.html_preview:
+				frappe.db.set_value(
+					"Email Queue",
+					name,
+					"html_preview",
+					doc.html_preview,
+					update_modified=False
+				)
+				frappe.db.commit()
+		
+		return {
+			"success": True,
+			"html": doc.html_preview or "<p>No preview available</p>"
+		}
+	except Exception as e:
+		frappe.log_error(f"Error getting preview: {str(e)}")
+		return {
+			"success": False,
+			"error": str(e)
+		}
+
+
+@frappe.whitelist()
+def regenerate_all_previews(limit=100):
+	"""
+	Regenerate previews for all Email Queue documents
+	
+	Args:
+		limit: Maximum number of documents to process
+	
+	Returns:
+		dict: Processing statistics
+	"""
+	frappe.only_for("System Manager")
+	
+	email_queues = frappe.get_all("Email Queue", limit=limit, pluck="name")
+	
+	stats = {
+		"total": len(email_queues),
+		"success": 0,
+		"failed": 0
+	}
+	
+	for name in email_queues:
+		try:
+			doc = frappe.get_doc("Email Queue", name)
+			doc.generate_email_preview()
+			doc.save(ignore_permissions=True)
+			stats["success"] += 1
+		except Exception as e:
+			stats["failed"] += 1
+			frappe.log_error(f"Failed to generate preview for {name}: {str(e)}")
+	
+	return stats
 
 
 def on_doctype_update():
