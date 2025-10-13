@@ -111,6 +111,8 @@ def get_email_template(template_name, doc):
 def _build_dummy_context():
 	return {
 		"doc": {
+			"intake_name": "Intake Testing",
+			"creation_date": "07 Oct 2025",
 			"name": "DUMMY-0001",
 			"quotation_name": "QTN-0001",
 			"customer_id": "CUST-0001",
@@ -269,7 +271,7 @@ def _build_dummy_context():
 		"customer_data": {
 			"portal_url": "/demo/customer"
 		},
-		"portal_url": "/demo"
+		"portal_url": "/demo",
 	}
 
 def _flatten_preview_context(ctx: dict) -> dict:

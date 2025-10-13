@@ -64,6 +64,7 @@ class EmailQueue(Document):
 		priority: DF.Int
 		recipients: DF.Table[EmailQueueRecipient]
 		reference_doctype: DF.Link | None
+		html_preview: DF.HTML | None
 		reference_name: DF.Data | None
 		retry: DF.Int
 		send_after: DF.Datetime | None
@@ -272,7 +273,7 @@ class EmailQueue(Document):
 	
 	def on_update(self):
 		"""Generate and save preview when document is updated"""
-		if self.message and not self.html_preview:
+		if self.message and not getattr(self, 'html_preview', None):
 			self.generate_email_preview()
 			if self.html_preview:
 				frappe.db.set_value(
@@ -935,7 +936,7 @@ def get_rendered_preview(name):
 		doc = frappe.get_doc("Email Queue", name)
 		
 		# Generate preview if not exists
-		if not doc.html_preview:
+		if not hasattr(doc, 'html_preview') or not doc.html_preview:
 			doc.generate_email_preview()
 			if doc.html_preview:
 				frappe.db.set_value(
