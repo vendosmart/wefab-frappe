@@ -72,9 +72,6 @@ function render_email_preview(frm) {
 	let $preview_section = $(`
 		<div class="email-preview-section" style="margin-top: 30px; margin-bottom: 20px;">
 			<div class="section-head">
-				<div class="section-head-label">
-					<h6 class="uppercase">📧 Email Preview</h6>
-				</div>
 			</div>
 			<div class="email-preview-content" style="
 				border: 1px solid #d1d8dd;
