@@ -56,6 +56,7 @@ class EmailQueue(Document):
 		add_unsubscribe_link: DF.Check
 		attachments: DF.Code | None
 		communication: DF.Link | None
+		creation_time: DF.Datetime | None
 		email_account: DF.Link | None
 		error: DF.Code | None
 		expose_recipients: DF.Data | None
@@ -256,6 +257,11 @@ class EmailQueue(Document):
 	def before_load(self):
 		"""Generate email preview before loading the document"""
 		self.generate_email_preview()
+
+	def before_insert(self):
+		"""Set creation time before inserting the document"""
+		if not self.creation_time:
+			self.creation_time = now()
 
 	def after_insert(self):
 		"""Generate and save preview after document is inserted"""
