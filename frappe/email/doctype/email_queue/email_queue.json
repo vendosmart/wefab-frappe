@@ -15,6 +15,7 @@
   "status",
   "error",
   "message_id",
+  "document_id",
   "reference_doctype",
   "reference_name",
   "communication",
@@ -162,13 +163,21 @@
    "fieldname": "creation_time",
    "fieldtype": "Datetime",
    "label": "creation time"
+  },
+  {
+   "fieldname": "document_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Document ID",
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "icon": "fa fa-envelope",
  "idx": 1,
  "in_create": 1,
  "links": [],
- "modified": "2025-10-15 19:00:03.519807",
+ "modified": "2025-10-15 22:02:04.093900",
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Email Queue",
