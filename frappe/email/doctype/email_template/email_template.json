@@ -9,12 +9,12 @@
  "engine": "InnoDB",
  "field_order": [
   "subject",
+  "html_preview",
   "use_html",
   "response_html",
   "response",
   "section_break_4",
-  "email_reply_help",
-  "html_preview"
+  "email_reply_help"
  ],
  "fields": [
   {
@@ -63,7 +63,7 @@
  ],
  "icon": "fa fa-comment",
  "links": [],
- "modified": "2025-10-13 19:08:43.916239",
+ "modified": "2025-12-09 16:37:23.282800",
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Email Template",
