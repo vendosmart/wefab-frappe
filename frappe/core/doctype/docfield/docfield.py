@@ -66,8 +66,6 @@ class DocField(Document):
 		remember_last_selected_value: DF.Check
 		report_hide: DF.Check
 		reqd: DF.Check
-		row_link_doctype: DF.Data | None
-		row_link_doctype_field: DF.Data | None
 		search_index: DF.Check
 		set_only_once: DF.Check
 		show_dashboard: DF.Check
