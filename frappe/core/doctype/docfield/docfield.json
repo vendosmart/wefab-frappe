@@ -77,7 +77,11 @@
   "documentation_url",
   "placeholder",
   "oldfieldname",
-  "oldfieldtype"
+  "oldfieldtype",
+  "platform_schema_fields",
+  "table_form_related_fields",
+  "is_primary_column",
+  "table_link_doctype"
  ],
  "fields": [
   {
@@ -588,6 +592,28 @@
    "fieldname": "make_attachment_public",
    "fieldtype": "Check",
    "label": "Make Attachment Public (by default)"
+  },
+  {
+   "description": "This section contains all the fields in meta data schema, which are related to table form front end component.\nThese fields are used by table form component to add additional features like\ndrop down in rfq line item (drop down shows all the values from the linked Item doctype)\nSimilarly in Project Doctype Budget Line Table is linked to Budget Table through GL code field",
+   "fieldname": "table_form_related_fields",
+   "fieldtype": "Section Break",
+   "label": "Platform Table Form Related Fields"
+  },
+  {
+   "fieldname": "table_link_doctype",
+   "fieldtype": "Data",
+   "label": "Table Link Doctype"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_primary_column",
+   "fieldtype": "Check",
+   "label": "Table Primary Column"
+  },
+  {
+   "fieldname": "platform_schema_fields",
+   "fieldtype": "Data",
+   "label": "Platform Related Fields"
   }
  ],
  "grid_page_length": 50,
@@ -595,7 +621,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-12-27 16:46:04.877132",
+ "modified": "2025-12-27 17:59:29.832651",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocField",

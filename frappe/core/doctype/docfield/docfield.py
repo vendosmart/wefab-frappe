@@ -40,6 +40,7 @@ class DocField(Document):
 		in_list_view: DF.Check
 		in_preview: DF.Check
 		in_standard_filter: DF.Check
+		is_primary_column: DF.Check
 		is_virtual: DF.Check
 		label: DF.Data | None
 		length: DF.Int
@@ -57,6 +58,7 @@ class DocField(Document):
 		parenttype: DF.Data
 		permlevel: DF.Int
 		placeholder: DF.Data | None
+		platform_schema_fields: DF.Data | None
 		precision: DF.Literal["", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 		print_hide: DF.Check
 		print_hide_if_no_value: DF.Check
@@ -71,6 +73,7 @@ class DocField(Document):
 		show_dashboard: DF.Check
 		show_on_timeline: DF.Check
 		sort_options: DF.Check
+		table_link_doctype: DF.Data | None
 		translatable: DF.Check
 		unique: DF.Check
 		width: DF.Data | None
