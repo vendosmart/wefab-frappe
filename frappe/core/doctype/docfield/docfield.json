@@ -77,7 +77,10 @@
   "documentation_url",
   "placeholder",
   "oldfieldname",
-  "oldfieldtype"
+  "oldfieldtype",
+  "platform_fields",
+  "row_link_doctype",
+  "row_link_doctype_field"
  ],
  "fields": [
   {
@@ -107,8 +110,7 @@
    "oldfieldtype": "Select",
    "options": "Autocomplete\nAttach\nAttach Image\nBarcode\nButton\nCheck\nCode\nColor\nColumn Break\nCurrency\nData\nDate\nDatetime\nDuration\nDynamic Link\nFloat\nFold\nGeolocation\nHeading\nHTML\nHTML Editor\nIcon\nImage\nInt\nJSON\nLink\nLong Text\nMarkdown Editor\nPassword\nPercent\nPhone\nRead Only\nRating\nSection Break\nSelect\nSignature\nSmall Text\nTab Break\nTable\nTable MultiSelect\nText\nText Editor\nTime",
    "reqd": 1,
-   "search_index": 1,
-   "sort_options": 1
+   "search_index": 1
   },
   {
    "bold": 1,
@@ -589,19 +591,36 @@
    "fieldname": "make_attachment_public",
    "fieldtype": "Check",
    "label": "Make Attachment Public (by default)"
+  },
+  {
+   "fieldname": "platform_fields",
+   "fieldtype": "Section Break",
+   "label": "Platform Fields"
+  },
+  {
+   "fieldname": "row_link_doctype",
+   "fieldtype": "Data",
+   "label": "Row Link Doctype"
+  },
+  {
+   "fieldname": "row_link_doctype_field",
+   "fieldtype": "Data",
+   "label": "Row Link Doctype Field"
   }
  ],
+ "grid_page_length": 50,
  "idx": 1,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-10-01 07:26:16.380090",
+ "modified": "2025-12-27 14:39:24.462099",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocField",
  "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "ASC",
  "states": []
