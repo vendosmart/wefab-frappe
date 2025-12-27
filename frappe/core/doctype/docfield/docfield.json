@@ -249,6 +249,7 @@
    "fieldname": "fetch_from",
    "fieldtype": "Small Text",
    "label": "Fetch From"
+
   },
   {
    "default": "0",
@@ -256,11 +257,13 @@
    "fieldname": "fetch_if_empty",
    "fieldtype": "Check",
    "label": "Fetch on Save if Empty"
+
   },
   {
    "fieldname": "permissions",
    "fieldtype": "Section Break",
    "label": "Permissions"
+
   },
   {
    "fieldname": "depends_on",
@@ -271,6 +274,7 @@
    "oldfieldname": "depends_on",
    "oldfieldtype": "Data",
    "options": "JS"
+
   },
   {
    "default": "0",
@@ -295,12 +299,14 @@
    "fieldname": "unique",
    "fieldtype": "Check",
    "label": "Unique"
+
   },
   {
    "default": "0",
    "fieldname": "set_only_once",
    "fieldtype": "Check",
    "label": "Set only once"
+
   },
   {
    "default": "0",
@@ -605,10 +611,10 @@
    "label": "Table Link Doctype"
   },
   {
-   "default": "0",
    "fieldname": "is_primary_column",
-   "fieldtype": "Check",
-   "label": "Table Primary Column"
+   "fieldtype": "Select",
+   "label": "Table Primary Column",
+   "options": "\n0\n1"
   },
   {
    "fieldname": "platform_schema_fields",
@@ -621,7 +627,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-12-27 17:59:29.832651",
+ "modified": "2025-12-27 19:13:21.812444",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "DocField",

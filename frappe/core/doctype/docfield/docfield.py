@@ -40,7 +40,7 @@ class DocField(Document):
 		in_list_view: DF.Check
 		in_preview: DF.Check
 		in_standard_filter: DF.Check
-		is_primary_column: DF.Check
+		is_primary_column: DF.Literal["", "0", "1"]
 		is_virtual: DF.Check
 		label: DF.Data | None
 		length: DF.Int
