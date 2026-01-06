@@ -757,6 +757,8 @@ class SendMailContext:
 		message = message.replace(
 			self.message_placeholder("recipient"), self.get_recipient_str(recipient_email)
 		)
+		# Convert timezone markers for this recipient
+		message = self.convert_timezone_markers(message, recipient_email)
 		message = self.include_attachments(message)
 		return message
 
@@ -809,6 +811,115 @@ class SendMailContext:
 
 	def get_recipient_str(self, recipient_email):
 		return recipient_email if self.queue_doc.expose_recipients != "header" else ""
+
+	def convert_timezone_markers(self, message: str, recipient_email: str) -> str:
+		"""
+		Convert all data-utc timezone markers to recipient's timezone.
+
+		Handles MIME-encoded messages by decoding, converting, then re-encoding.
+
+		Markers format: <span data-utc="2025-01-15T10:30:00Z">15 Jan 2025 04:00 PM (UTC+05:30)</span>
+		Output format: 15 Jan 2025 11:30 AM (UTC-05:00)
+		"""
+		import re
+		import pytz
+		from datetime import datetime
+		from email.parser import Parser
+		from email.policy import SMTP
+
+		# Get recipient timezone
+		recipient_tz = self.get_recipient_timezone(recipient_email)
+
+		try:
+			target_timezone = pytz.timezone(recipient_tz)
+		except Exception:
+			return message  # Invalid timezone, return unchanged
+
+		# Parse the MIME message
+		try:
+			msg = Parser(policy=SMTP).parsestr(message)
+		except Exception:
+			return message  # Can't parse, return unchanged
+
+		def convert_html_content(html_content: str) -> str:
+			"""Apply timezone conversion to decoded HTML content."""
+			# Pattern: <span data-utc="2025-01-15T10:30:00Z">any text</span>
+			datetime_pattern = r'<span data-utc="([^"]+)">([^<]*)</span>'
+
+			def replace_datetime(match):
+				utc_str = match.group(1)
+				try:
+					# Parse UTC datetime
+					utc_dt = datetime.strptime(utc_str, '%Y-%m-%dT%H:%M:%SZ')
+					utc_dt = pytz.UTC.localize(utc_dt)
+
+					# Convert to target timezone
+					local_dt = utc_dt.astimezone(target_timezone)
+
+					# Format: "15 Jan 2025 04:00 PM (UTC+05:30)"
+					offset = local_dt.strftime('%z')
+					offset_formatted = f"UTC{offset[:3]}:{offset[3:]}"
+					formatted_time = local_dt.strftime('%d %b %Y %I:%M %p')
+
+					return f"{formatted_time} ({offset_formatted})"
+				except Exception:
+					return match.group(2)  # Return original text on error
+
+			# Convert datetime markers
+			result = re.sub(datetime_pattern, replace_datetime, html_content)
+
+			# Strip date-only markers (no timezone conversion needed)
+			date_pattern = r'<span data-date="[^"]+">([^<]*)</span>'
+			result = re.sub(date_pattern, r'\1', result)
+
+			return result
+
+		def process_part(part):
+			"""Process a single MIME part."""
+			content_type = part.get_content_type()
+
+			if content_type in ('text/html', 'text/plain'):
+				try:
+					# Get the payload (decoded)
+					charset = part.get_content_charset() or 'utf-8'
+					payload = part.get_payload(decode=True)
+
+					if payload:
+						decoded_content = payload.decode(charset, errors='replace')
+
+						# Apply timezone conversion
+						converted_content = convert_html_content(decoded_content)
+
+						# Set the new payload
+						part.set_payload(converted_content, charset=charset)
+				except Exception:
+					pass  # Keep original on error
+
+		# Process the message
+		if msg.is_multipart():
+			for part in msg.walk():
+				process_part(part)
+		else:
+			process_part(msg)
+
+		# Return the modified message as string
+		return msg.as_string()
+
+	def get_recipient_timezone(self, recipient_email: str) -> str:
+		"""
+		Get timezone for a recipient by email.
+		Falls back to system timezone if user not found or no timezone set.
+		"""
+		from frappe.utils import get_system_timezone
+
+		try:
+			user_tz = frappe.db.get_value("User", recipient_email, "time_zone")
+			if user_tz:
+				return user_tz
+		except Exception:
+			pass
+
+		return get_system_timezone()
 
 	def include_attachments(self, message):
 		message_obj = self.get_message_object(message)

@@ -349,6 +349,92 @@ def convert_utc_to_system_timezone(utc_timestamp):
 	return convert_utc_to_timezone(utc_timestamp, time_zone)
 
 
+def format_datetime_with_tz_marker(dt_value, fallback=""):
+	"""
+	Format datetime with UTC marker for per-recipient timezone conversion in emails.
+
+	Output: <span data-utc="2025-01-15T10:30:00Z">15 Jan 2025 04:00 PM (UTC+05:30)</span>
+
+	The data-utc attribute stores UTC time, which gets converted to each
+	recipient's timezone in email_queue.py's build_message() method.
+
+	Args:
+		dt_value: Datetime object or string (in system timezone)
+		fallback: Value to return if dt_value is None
+
+	Returns:
+		HTML span with UTC data attribute and formatted display text
+	"""
+	if not dt_value:
+		return fallback
+
+	try:
+		# Parse to datetime if string
+		if isinstance(dt_value, str):
+			for fmt in ['%Y-%m-%d %H:%M:%S.%f', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d']:
+				try:
+					dt = datetime.datetime.strptime(dt_value, fmt)
+					break
+				except ValueError:
+					continue
+			else:
+				return fallback
+		elif isinstance(dt_value, datetime.datetime):
+			dt = dt_value
+		else:
+			return fallback
+
+		# Get system timezone
+		system_tz_str = get_system_timezone()
+		system_tz = pytz.timezone(system_tz_str)
+
+		# Localize to system timezone (Frappe stores datetimes in system tz)
+		if dt.tzinfo is None:
+			local_dt = system_tz.localize(dt)
+		else:
+			local_dt = dt
+
+		# Convert to UTC for storage in marker
+		utc_dt = local_dt.astimezone(pytz.UTC)
+		utc_iso = utc_dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+		# Format display time with timezone offset
+		offset = local_dt.strftime('%z')  # e.g., +0530
+		offset_formatted = f"UTC{offset[:3]}:{offset[3:]}"  # UTC+05:30
+		formatted_time = local_dt.strftime('%d %b %Y %I:%M %p')
+		display_text = f"{formatted_time} ({offset_formatted})"
+
+		# Wrap in span with UTC data attribute
+		return f'<span data-utc="{utc_iso}">{display_text}</span>'
+
+	except Exception:
+		return fallback
+
+
+def format_date_with_tz_marker(date_value, fallback=""):
+	"""
+	Format date with marker for consistency. Dates don't need timezone conversion.
+
+	Args:
+		date_value: Date object or string
+		fallback: Value to return if date_value is None
+
+	Returns:
+		HTML span with data-date attribute (for stripping during send)
+	"""
+	if not date_value:
+		return fallback
+
+	try:
+		if hasattr(date_value, 'strftime'):
+			formatted = date_value.strftime('%d %b %Y')
+			iso_date = date_value.strftime('%Y-%m-%d')
+			return f'<span data-date="{iso_date}">{formatted}</span>'
+		return str(date_value)
+	except Exception:
+		return fallback
+
+
 def now() -> str:
 	"""return current datetime as yyyy-mm-dd hh:mm:ss"""
 	if frappe.flags.current_date:
