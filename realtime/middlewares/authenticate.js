@@ -13,13 +13,23 @@ function authenticate_with_frappe(socket, next) {
 		next(new Error("Invalid namespace"));
 	}
 
-	if (get_hostname(socket.request.headers.host) != get_hostname(socket.request.headers.origin)) {
-		next(new Error("Invalid origin"));
-		return;
+	// Allow localhost for development testing
+	const allowedOrigins = ['localhost', '127.0.0.1'];
+	const originHost = get_hostname(socket.request.headers.origin);
+	const requestHost = get_hostname(socket.request.headers.host);
+
+	// Skip origin check if origin is localhost (for local development)
+	if (originHost && !allowedOrigins.includes(originHost)) {
+		if (originHost != requestHost) {
+			next(new Error("Invalid origin"));
+			return;
+		}
 	}
 
-	if (!socket.request.headers.cookie) {
-		next(new Error("No cookie transmitted."));
+	// Allow requests with Authorization header (no cookie required)
+	// This is needed for external React/Next.js apps using API keys
+	if (!socket.request.headers.cookie && !socket.request.headers.authorization) {
+		next(new Error("No cookie or authorization header transmitted."));
 		return;
 	}
 
