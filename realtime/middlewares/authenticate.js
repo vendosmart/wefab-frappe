@@ -36,6 +36,16 @@ function authenticate_with_frappe(socket, next) {
 	let cookies = cookie.parse(socket.request.headers.cookie || "");
 	let authorization_header = socket.request.headers.authorization;
 
+	// Support auth token from Socket.IO handshake auth (for browser clients)
+	if (!authorization_header && socket.handshake.auth && socket.handshake.auth.token) {
+		authorization_header = `token ${socket.handshake.auth.token}`;
+	}
+
+	// Support auth token from query parameters (alternative for browser clients)
+	if (!authorization_header && socket.handshake.query && socket.handshake.query.token) {
+		authorization_header = `token ${socket.handshake.query.token}`;
+	}
+
 	if (!cookies.sid && !authorization_header) {
 		next(new Error("No authentication method used. Use cookie or authorization header."));
 		return;
