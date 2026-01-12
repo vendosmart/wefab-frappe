@@ -13,8 +13,10 @@
   "show_as_cc",
   "message",
   "status",
+  "creation_time",
   "error",
   "message_id",
+  "document_id",
   "reference_doctype",
   "reference_name",
   "communication",
@@ -156,13 +158,27 @@
    "fieldname": "html_preview",
    "fieldtype": "HTML",
    "label": "Email Preview"
+  },
+  {
+   "fieldname": "creation_time",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "creation time"
+  },
+  {
+   "fieldname": "document_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Document ID",
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "icon": "fa fa-envelope",
  "idx": 1,
  "in_create": 1,
  "links": [],
- "modified": "2025-10-07 16:59:11.727267",
+ "modified": "2025-10-16 15:35:48.376754",
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Email Queue",
