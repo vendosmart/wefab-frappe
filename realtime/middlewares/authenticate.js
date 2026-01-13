@@ -59,6 +59,15 @@ function authenticate_with_frappe(socket, next) {
 	let cookies = cookie.parse(socket.request.headers.cookie || "");
 	let authorization_header = socket.request.headers.authorization;
 
+	// Support token from Socket.IO auth object or query parameter (for WebSocket transport)
+	// WebSocket cannot send custom headers, so external clients pass token via auth/query
+	if (!authorization_header && socket.handshake) {
+		const auth_token = socket.handshake.auth?.token || socket.handshake.query?.token;
+		if (auth_token) {
+			authorization_header = auth_token;
+		}
+	}
+
 	// Allow connection if either cookie or authorization header is present
 	// (removed strict cookie requirement for external clients using auth headers)
 
