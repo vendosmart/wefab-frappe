@@ -264,9 +264,10 @@ class EmailQueue(Document):
 		"""Set creation time before inserting the document"""
 		if not self.creation_time:
 			self.creation_time = now()
-		if not self.document_id:
-			self.document_id = self.reference_name.split(',')[1]
-			self.reference_name = self.reference_name.split(',')[0]
+		if not self.document_id and self.reference_name and ',' in self.reference_name:
+			parts = self.reference_name.split(',', 1)  # Split only on first comma
+			self.reference_name = parts[0]
+			self.document_id = parts[1]
 
 	def after_insert(self):
 		"""Generate and save preview after document is inserted"""
