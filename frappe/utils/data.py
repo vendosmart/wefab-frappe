@@ -413,14 +413,15 @@ def format_datetime_with_tz_marker(dt_value, fallback=""):
 
 def format_date_with_tz_marker(date_value, fallback=""):
 	"""
-	Format date with marker for consistency. Dates don't need timezone conversion.
+	Format date as plain text for use in email subjects and body.
+	Dates don't need timezone conversion.
 
 	Args:
 		date_value: Date object or string
 		fallback: Value to return if date_value is None
 
 	Returns:
-		HTML span with data-date attribute (for stripping during send)
+		Formatted date string (e.g., "27 Mar 2026")
 	"""
 	if not date_value:
 		return fallback
@@ -428,8 +429,7 @@ def format_date_with_tz_marker(date_value, fallback=""):
 	try:
 		if hasattr(date_value, 'strftime'):
 			formatted = date_value.strftime('%d %b %Y')
-			iso_date = date_value.strftime('%Y-%m-%d')
-			return f'<span data-date="{iso_date}">{formatted}</span>'
+			return formatted
 		return str(date_value)
 	except Exception:
 		return fallback
